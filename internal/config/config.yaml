@@ -1,0 +1,5 @@
+server:
+  port: 3003
+  paymentIntegrationHost: http://localhost:3001
+db:
+  connectionString: mongodb://root:password@0.0.0.0:27017/
