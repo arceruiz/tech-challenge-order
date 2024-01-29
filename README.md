@@ -2,7 +2,7 @@
 
 # Description
 
-This service is responsible to manage the orders and recieve updates from payment service.
+This service is responsible to manage the orders and recieve updates from payment service. We have a diagram about a flow of this service here: [CRUD Flow ](./docs/diagrams/image.png), [Checkout Flow](./docs/diagrams/image2.png) 
 
 ## Features
 
@@ -42,3 +42,12 @@ On directory ```/api``` there's a collection that can be imported on Insomnia or
 ## Running the unit tests
 
 Simply run ```make run-tests``` and let the magic happens. At the end it will automatically open an html with the coverage % for every package.
+We also have the most recently applied unit tests file in this [folder](/docs/unit-tests-results/unit-tests.png) too.
+
+## Test + Build + Bake Image
+
+Simply run ```make test-build-bake``` and let the magic happens. The docker file will run the unit-tests, build the application and bake the docker image for the application.
+
+## Infrastructure
+
+This application runs in a k8s cluster. The terraform about the configuration of this application are in this [repository](https://github.com/mauriciodm1998/order-service-gitops).
