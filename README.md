@@ -42,7 +42,7 @@ On directory ```/api``` there's a collection that can be imported on Insomnia or
 ## Running the unit tests
 
 Simply run ```make run-tests``` and let the magic happens. At the end it will automatically open an html with the coverage % for every package.
-We also have the most recently applied unit tests file in this [folder](/docs/unit-tests-results/unit-tests.png) too.
+We also have the most recently applied unit tests file in this [folder](./docs/unit-tests-results/Capture.PNG) too.
 
 ## Test + Build + Bake Image
 
