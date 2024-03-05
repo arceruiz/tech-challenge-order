@@ -1,9 +1,8 @@
-package repository_test
+package repository
 
 import (
 	"context"
 	"tech-challenge-order/internal/canonical"
-	"tech-challenge-order/internal/repository"
 	"testing"
 	"time"
 
@@ -31,7 +30,10 @@ func TestOrderRepository_GetByID(t *testing.T) {
 		"given valid search result, must return valid order": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
+
 					mt.AddMockResponses(
 						mtest.CreateCursorResponse(1,
 							"order.order",
@@ -73,7 +75,9 @@ func TestOrderRepository_GetByID(t *testing.T) {
 		"given entity not found must return error": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					mt.AddMockResponses(mtest.CreateCursorResponse(0, "order.order", mtest.FirstBatch))
 					order, err := repo.GetByID(context.Background(), "asd")
 					assert.NotNil(t, err)
@@ -108,7 +112,9 @@ func TestOrderRepository_GetAll(t *testing.T) {
 		"given valid search result, must return valid order": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 
 					first := mtest.CreateCursorResponse(1, "order.order", mtest.FirstBatch, bson.D{
 						{Key: "_id", Value: "order_valid_id"},
@@ -175,7 +181,9 @@ func TestOrderRepository_GetAll(t *testing.T) {
 		"given entity not found must return error": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					mt.AddMockResponses(mtest.CreateWriteErrorsResponse(mtest.WriteError{Message: "mongo: no documents in result"}))
 					order, err := repo.GetAll(context.Background())
 					assert.NotNil(t, err)
@@ -210,8 +218,9 @@ func TestOrderRepository_GetByCategory(t *testing.T) {
 		"given valid search result, must return valid order": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
-
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					first := mtest.CreateCursorResponse(1, "order.order", mtest.FirstBatch, bson.D{
 						{Key: "_id", Value: "order_valid_id"},
 						{Key: "customer_id", Value: "order_valid_customer_id"},
@@ -276,7 +285,9 @@ func TestOrderRepository_GetByCategory(t *testing.T) {
 		"given entity not found must return error": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					mt.AddMockResponses(mtest.CreateWriteErrorsResponse(mtest.WriteError{Message: "mongo: no documents in result"}))
 					order, err := repo.GetByStatus(context.Background(), 2)
 					assert.NotNil(t, err)
@@ -311,7 +322,9 @@ func TestCreate(t *testing.T) {
 		"given given no error saving must return correct entity": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					mt.AddMockResponses(mtest.CreateSuccessResponse())
 
 					order := canonical.Order{
@@ -354,7 +367,9 @@ func TestCreate(t *testing.T) {
 		"given given error saving must return error": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					mt.AddMockResponses(
 						bson.D{
 							{Key: "ok", Value: -1},
@@ -424,7 +439,9 @@ func TestUpdate(t *testing.T) {
 		"given given no error updating must return no error": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					mt.AddMockResponses(bson.D{
 						{Key: "ok", Value: 1},
 						{Key: "value", Value: bson.D{
@@ -493,7 +510,9 @@ func TestUpdate(t *testing.T) {
 		"given error saving must return error": {
 			given: Given{
 				mtestFunc: func(mt *mtest.T) {
-					repo := repository.NewOrderRepo(mt.DB)
+					repo := orderRepository{
+						collection: mt.DB.Collection("fake-collection"),
+					}
 					mt.AddMockResponses(
 						bson.D{
 							{Key: "ok", Value: -1},

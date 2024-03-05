@@ -24,8 +24,8 @@ type orderRepository struct {
 	collection *mongo.Collection
 }
 
-func NewOrderRepo(db *mongo.Database) OrderRepository {
-	return &orderRepository{collection: db.Collection(collection)}
+func NewOrderRepo() OrderRepository {
+	return &orderRepository{collection: NewMongo().Collection(collection)}
 }
 
 func (r *orderRepository) GetAll(ctx context.Context) ([]canonical.Order, error) {

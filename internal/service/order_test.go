@@ -1,4 +1,4 @@
-package service_test
+package service
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"tech-challenge-order/internal/integration/payment"
 	mock_test "tech-challenge-order/internal/mocks"
 	"tech-challenge-order/internal/repository"
-	"tech-challenge-order/internal/service"
 	"testing"
 	"time"
 
@@ -73,7 +72,11 @@ func TestOrderService_GetByID(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		_, err := service.NewOrderService(tc.given.orderRepo(), &mock_test.PaymentServiceMock{}).GetByID(context.Background(), tc.given.id)
+		order := orderService{
+			repo:           tc.given.orderRepo(),
+			paymentService: &mock_test.PaymentServiceMock{},
+		}
+		_, err := order.GetByID(context.Background(), tc.given.id)
 
 		tc.expected.err(t, err)
 	}
@@ -164,7 +167,11 @@ func TestOrderService_GetAll(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		_, err := service.NewOrderService(tc.given.orderRepo(), &mock_test.PaymentServiceMock{}).GetAll(context.Background())
+		order := orderService{
+			repo:           tc.given.orderRepo(),
+			paymentService: &mock_test.PaymentServiceMock{},
+		}
+		_, err := order.GetAll(context.Background())
 
 		tc.expected.err(t, err)
 	}
@@ -257,7 +264,11 @@ func TestOrderService_GetByCategory(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		_, err := service.NewOrderService(tc.given.orderRepo(), &mock_test.PaymentServiceMock{}).GetByStatus(context.Background(), tc.given.status)
+		order := orderService{
+			repo:           tc.given.orderRepo(),
+			paymentService: &mock_test.PaymentServiceMock{},
+		}
+		_, err := order.GetByStatus(context.Background(), tc.given.status)
 
 		tc.expected.err(t, err)
 	}
@@ -393,7 +404,11 @@ func TestOrderService_Create(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		err := service.NewOrderService(tc.given.orderRepo(), &mock_test.PaymentServiceMock{}).Create(context.Background(), tc.given.order)
+		order := orderService{
+			repo:           tc.given.orderRepo(),
+			paymentService: &mock_test.PaymentServiceMock{},
+		}
+		err := order.Create(context.Background(), tc.given.order)
 
 		tc.expected.err(t, err)
 	}
@@ -533,7 +548,11 @@ func TestOrderService_Update(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		err := service.NewOrderService(tc.given.orderRepo(), &mock_test.PaymentServiceMock{}).Update(context.Background(), tc.given.orderID, tc.given.order)
+		order := orderService{
+			repo:           tc.given.orderRepo(),
+			paymentService: &mock_test.PaymentServiceMock{},
+		}
+		err := order.Update(context.Background(), tc.given.orderID, tc.given.order)
 
 		tc.expected.err(t, err)
 	}
@@ -666,7 +685,12 @@ func TestOrderService_Checkout(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		order, err := service.NewOrderService(tc.given.orderRepo(), tc.given.paymentService()).CheckoutOrder(context.Background(), tc.given.orderID)
+		ordersvc := orderService{
+			repo:           tc.given.orderRepo(),
+			paymentService: tc.given.paymentService(),
+		}
+
+		order, err := ordersvc.CheckoutOrder(context.Background(), tc.given.orderID)
 
 		if err == nil {
 			assert.Equal(t, canonical.ORDER_CHECKED_OUT, order.Status)

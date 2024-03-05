@@ -1,4 +1,4 @@
-package rest_test
+package rest
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"tech-challenge-order/internal/canonical"
-	"tech-challenge-order/internal/channels/rest"
 	"tech-challenge-order/internal/mocks"
 	"tech-challenge-order/internal/service"
 	"testing"
@@ -46,7 +45,9 @@ func TestRegisterGroup(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		p := rest.NewOrderChannel(tc.given.orderService)
+		p := order{
+			service: tc.given.orderService,
+		}
 		p.RegisterGroup(tc.given.group)
 
 		rec := httptest.NewRecorder()
@@ -81,16 +82,16 @@ func TestCreate(t *testing.T) {
 	}{
 		"given normal json income must process normally": {
 			given: Given{
-				request: createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{
+				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
 					ID:         "",
 					CustomerID: "",
 					Status:     "",
 					CreatedAt:  time.Time{},
 					UpdatedAt:  time.Time{},
 					Total:      0,
-					OrderItems: []rest.OrderItem{},
+					OrderItems: []OrderItem{},
 				}),
-				orderService: mockOrderServiceForCreate(canonical.Order{}, canonical.Order{}),
+				orderService: mockOrderServiceForCreate(canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -99,8 +100,8 @@ func TestCreate(t *testing.T) {
 		},
 		"given error creating, must return error": {
 			given: Given{
-				request:      createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
-				orderService: mockOrderServiceForCreateError(canonical.Order{}, canonical.Order{}),
+				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
+				orderService: mockOrderServiceForCreateError(canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -109,16 +110,16 @@ func TestCreate(t *testing.T) {
 		},
 		"given status unrecognized, must return error": {
 			given: Given{
-				request: createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{
+				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
 					ID:         "",
 					CustomerID: "",
 					Status:     "asdasd",
 					CreatedAt:  time.Time{},
 					UpdatedAt:  time.Time{},
 					Total:      0,
-					OrderItems: []rest.OrderItem{},
+					OrderItems: []OrderItem{},
 				}),
-				orderService: mockOrderServiceForCreate(canonical.Order{}, canonical.Order{}),
+				orderService: mockOrderServiceForCreate(canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -128,7 +129,7 @@ func TestCreate(t *testing.T) {
 		"given wrong format must return error": {
 			given: Given{
 				request:      createRequest(http.MethodPost, endpoint),
-				orderService: mockOrderServiceForCreate(canonical.Order{}, canonical.Order{}),
+				orderService: mockOrderServiceForCreate(canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -138,7 +139,7 @@ func TestCreate(t *testing.T) {
 		"given invalid data, must return bad request": {
 			given: Given{
 				request:      createRequest(http.MethodPost, endpoint),
-				orderService: mockOrderServiceForCreate(canonical.Order{}, canonical.Order{}),
+				orderService: mockOrderServiceForCreate(canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -149,7 +150,13 @@ func TestCreate(t *testing.T) {
 
 	for _, tc := range tests {
 		rec := httptest.NewRecorder()
-		err := rest.NewOrderChannel(tc.given.orderService).Create(echo.New().NewContext(tc.given.request, rec))
+
+		orderSvc := order{
+			service: tc.given.orderService,
+		}
+
+		err := orderSvc.Create(echo.New().NewContext(tc.given.request, rec))
+
 		statusCode := rec.Result().StatusCode
 
 		assert.Equal(t, tc.expected.statusCode, statusCode)
@@ -177,7 +184,7 @@ func TestUpdate(t *testing.T) {
 		"given normal json income must process normally": {
 			given: Given{
 				pathParamID:  "valid_ID",
-				request:      createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -188,7 +195,7 @@ func TestUpdate(t *testing.T) {
 		"given given error updating, must return error": {
 			given: Given{
 				pathParamID:  "invalid_ID",
-				request:      createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -232,14 +239,14 @@ func TestUpdate(t *testing.T) {
 		"given invalid status, must return bad request": {
 			given: Given{
 				pathParamID: "valid_ID",
-				request: createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{
+				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
 					ID:         "",
 					CustomerID: "",
 					Status:     "asdasd",
 					CreatedAt:  time.Time{},
 					UpdatedAt:  time.Time{},
 					Total:      0,
-					OrderItems: []rest.OrderItem{},
+					OrderItems: []OrderItem{},
 				}),
 				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
@@ -256,7 +263,13 @@ func TestUpdate(t *testing.T) {
 		e.SetPath("/:id")
 		e.SetParamNames("id")
 		e.SetParamValues(tc.given.pathParamID)
-		err := rest.NewOrderChannel(tc.given.orderService).Update(e)
+
+		orderSvc := order{
+			service: tc.given.orderService,
+		}
+
+		err := orderSvc.Update(e)
+
 		statusCode := rec.Result().StatusCode
 
 		assert.Equal(t, tc.expected.statusCode, statusCode)
@@ -288,7 +301,7 @@ func TestUpdateStatus(t *testing.T) {
 				pathParamID:    "valid_ID",
 				pathParamKey:   "status",
 				pathParamValue: "RECEIVED",
-				request:        createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:        createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -340,7 +353,7 @@ func TestUpdateStatus(t *testing.T) {
 				pathParamID:    "invalid_ID_updt",
 				pathParamKey:   "status",
 				pathParamValue: "RECEIVED",
-				request:        createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:        createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -353,7 +366,7 @@ func TestUpdateStatus(t *testing.T) {
 				pathParamID:    "invalid_ID_nil",
 				pathParamKey:   "status",
 				pathParamValue: "RECEIVED",
-				request:        createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:        createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -370,7 +383,12 @@ func TestUpdateStatus(t *testing.T) {
 			e.QueryParams().Add("id", tc.given.pathParamID)
 			e.QueryParams().Add(tc.given.pathParamKey, tc.given.pathParamValue)
 		}
-		err := rest.NewOrderChannel(tc.given.orderService).UpdateStatus(e)
+
+		orderSvc := order{
+			service: tc.given.orderService,
+		}
+
+		err := orderSvc.UpdateStatus(e)
 		statusCode := rec.Result().StatusCode
 
 		assert.Equal(t, tc.expected.statusCode, statusCode)
@@ -398,7 +416,7 @@ func TestCheckout(t *testing.T) {
 		"given normal json income must process normally": {
 			given: Given{
 				pathParamID:  "valid_ID",
-				request:      createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService: mockOrderServiceForCheckout("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -409,7 +427,7 @@ func TestCheckout(t *testing.T) {
 		"given given error updating, must return error": {
 			given: Given{
 				pathParamID:  "invalid_ID",
-				request:      createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService: mockOrderServiceForCheckout("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -420,7 +438,7 @@ func TestCheckout(t *testing.T) {
 		"given empty id, must return error": {
 			given: Given{
 				pathParamID:  "",
-				request:      createJsonRequest(http.MethodPost, endpoint, rest.OrderRequest{}),
+				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
 				orderService: mockOrderServiceForCheckout("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
@@ -435,7 +453,12 @@ func TestCheckout(t *testing.T) {
 		e := echo.New().NewContext(tc.given.request, rec)
 
 		e.QueryParams().Add("id", tc.given.pathParamID)
-		err := rest.NewOrderChannel(tc.given.orderService).CheckoutOrder(e)
+
+		orderSvc := order{
+			service: tc.given.orderService,
+		}
+
+		err := orderSvc.CheckoutOrder(e)
 		statusCode := rec.Result().StatusCode
 
 		assert.Equal(t, tc.expected.statusCode, statusCode)
@@ -464,7 +487,7 @@ func TestGet(t *testing.T) {
 		"given clean request returns valid order and status 200": {
 			given: Given{
 				request: createRequest(http.MethodGet, endpoint),
-				orderService: mockOrderServiceForGetAll("1234", []canonical.Order{{
+				orderService: mockOrderServiceForGetAll([]canonical.Order{{
 					ID: "1234",
 				}}),
 			},
@@ -522,7 +545,7 @@ func TestGet(t *testing.T) {
 		"given empty id returns no order and status 400": {
 			given: Given{
 				request:      createRequest(http.MethodGet, endpoint),
-				orderService: mockOrderServiceForGetAll_error("1234", nil),
+				orderService: mockOrderServiceForGetAll_error(nil),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -532,7 +555,7 @@ func TestGet(t *testing.T) {
 		"given invalic id returns no order and status 404": {
 			given: Given{
 				request:      createRequest(http.MethodGet, endpoint),
-				orderService: mockOrderServiceForGetAll("1234", nil),
+				orderService: mockOrderServiceForGetAll(nil),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -549,27 +572,17 @@ func TestGet(t *testing.T) {
 		if tc.given.pathParamKey != "" {
 			e.QueryParams().Add(tc.given.pathParamKey, tc.given.pathParamValue)
 		}
-		err := rest.NewOrderChannel(tc.given.orderService).Get(e)
+		orderSvc := order{
+			service: tc.given.orderService,
+		}
+
+		err := orderSvc.Get(e)
 		statusCode := rec.Result().StatusCode
 
 		assert.Equal(t, tc.expected.statusCode, statusCode)
 
 		tc.expected.err(t, err)
 	}
-}
-
-func mockOrderServiceForRemove(id string, orderReturned canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
-
-	mockOrderSvc.
-		On("Remove", mock.Anything, id).
-		Return(nil)
-
-	mockOrderSvc.
-		On("Remove", mock.Anything, "invalid_ID").
-		Return(errors.New(""))
-
-	return mockOrderSvc
 }
 
 func mockOrderServiceForUpdate(id string, orderReturned canonical.Order) *mocks.OrderServiceMock {
@@ -644,7 +657,7 @@ func mockOrderServiceForGetByID(orderID string, orderReturned *canonical.Order) 
 	return mockOrderSvc
 }
 
-func mockOrderServiceForGetAll(orderID string, orderReturned []canonical.Order) *mocks.OrderServiceMock {
+func mockOrderServiceForGetAll(orderReturned []canonical.Order) *mocks.OrderServiceMock {
 	mockOrderSvc := new(mocks.OrderServiceMock)
 
 	mockOrderSvc.
@@ -653,7 +666,7 @@ func mockOrderServiceForGetAll(orderID string, orderReturned []canonical.Order) 
 	return mockOrderSvc
 }
 
-func mockOrderServiceForGetAll_error(orderID string, orderReturned []canonical.Order) *mocks.OrderServiceMock {
+func mockOrderServiceForGetAll_error(orderReturned []canonical.Order) *mocks.OrderServiceMock {
 	mockOrderSvc := new(mocks.OrderServiceMock)
 
 	mockOrderSvc.
@@ -663,7 +676,7 @@ func mockOrderServiceForGetAll_error(orderID string, orderReturned []canonical.O
 	return mockOrderSvc
 }
 
-func mockOrderServiceForCreate(orderReceived, orderReturned canonical.Order) *mocks.OrderServiceMock {
+func mockOrderServiceForCreate(orderReceived canonical.Order) *mocks.OrderServiceMock {
 	mockOrderSvc := new(mocks.OrderServiceMock)
 	mockOrderSvc.On("Create", mock.Anything, orderReceived).Return(nil)
 	mockOrderSvc.On("Create", mock.Anything, canonical.Order{
@@ -677,7 +690,7 @@ func mockOrderServiceForCreate(orderReceived, orderReturned canonical.Order) *mo
 	}).Return(errors.New(""))
 	return mockOrderSvc
 }
-func mockOrderServiceForCreateError(orderReceived, orderReturned canonical.Order) *mocks.OrderServiceMock {
+func mockOrderServiceForCreateError(orderReceived canonical.Order) *mocks.OrderServiceMock {
 	mockOrderSvc := new(mocks.OrderServiceMock)
 	mockOrderSvc.On("Create", mock.Anything, orderReceived).Return(errors.New(""))
 	return mockOrderSvc

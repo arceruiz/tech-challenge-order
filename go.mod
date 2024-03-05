@@ -3,6 +3,7 @@ module tech-challenge-order
 go 1.21.0
 
 require (
+	github.com/aws/aws-sdk-go v1.50.31
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/notnull-co/cfg v1.0.4
 	github.com/shopspring/decimal v1.3.1
@@ -14,6 +15,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect

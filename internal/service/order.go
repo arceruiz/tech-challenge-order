@@ -25,10 +25,10 @@ type orderService struct {
 	paymentService payment.PaymentService
 }
 
-func NewOrderService(repository repository.OrderRepository, paymentService payment.PaymentService) OrderService {
+func NewOrderService() OrderService {
 	return &orderService{
-		repo:           repository,
-		paymentService: paymentService,
+		repo:           repository.NewOrderRepo(),
+		paymentService: payment.NewPaymentService(),
 	}
 }
 

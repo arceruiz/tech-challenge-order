@@ -14,9 +14,9 @@ type order struct {
 	service service.OrderService
 }
 
-func NewOrderChannel(orderService service.OrderService) Order {
+func NewOrderChannel() Order {
 	return &order{
-		service: orderService,
+		service: service.NewOrderService(),
 	}
 }
 

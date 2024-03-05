@@ -21,9 +21,9 @@ type paymentService struct {
 	httpClient *http.Client
 }
 
-func NewPaymentService(client *http.Client) PaymentService {
+func NewPaymentService() PaymentService {
 	return &paymentService{
-		httpClient: client,
+		httpClient: http.DefaultClient,
 	}
 }
 
