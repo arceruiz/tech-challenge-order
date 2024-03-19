@@ -44,9 +44,7 @@ func returnSecretKey(token *jwt.Token) (interface{}, error) {
 }
 
 func ExtractCustomerId(request *http.Request) (string, error) {
-	token := request.Header.Get("Authorization")
-
-	tokenS, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	tokenS, err := jwt.Parse(getToken(request), func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid jwt")
 		}

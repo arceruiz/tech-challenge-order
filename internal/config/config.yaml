@@ -1,7 +1,6 @@
 server:
   port: 3003
-  grpc_port: "3006"
-  paymentIntegrationHost: http://localhost:3001
+  product_integration: localhost:3004
 token:
   key: "dnVJWGFPSzRPcEpXQTl5U1gxVVRwSVdzaFhQcFA2bmVHS0dBNzI0RmF1WQ=="
 db:
@@ -12,3 +11,4 @@ sqs:
   payment_pending_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentpendingqueue
   order_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/orderqueue
   payment_payed_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentpayedqueue
+  payment_cancelled_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentcancelledqueue

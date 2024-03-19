@@ -17,17 +17,18 @@ type Config struct {
 	} `cfg:"token"`
 	Server struct {
 		Port        string `cfg:"port"`
-		ProductPort string `cfg:"paymentIntegrationHost"`
+		ProductPort string `cfg:"product_integration"`
 	} `cfg:"server"`
 	DB struct {
 		ConnectionString string `cfg:"connectionString"`
 	} `cfg:"db"`
 	SQS struct {
-		PaymentPendingQueue string `cfg:"payment_pending_queue"`
-		PaymentPayedQueue   string `cfg:"payment_payed_queue"`
-		OrderQueue          string `cfg:"order_queue"`
-		Region              string `cfg:"region"`
-		Endpoint            string `cfg:"endpoint"`
+		PaymentPendingQueue   string `cfg:"payment_pending_queue"`
+		PaymentPayedQueue     string `cfg:"payment_payed_queue"`
+		PaymentCancelledQueue string `cfg:"payment_cancelled_queue"`
+		OrderQueue            string `cfg:"order_queue"`
+		Region                string `cfg:"region"`
+		Endpoint              string `cfg:"endpoint"`
 	} `cfg:"sqs"`
 }
 

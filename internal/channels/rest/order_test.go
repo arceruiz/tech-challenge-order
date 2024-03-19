@@ -10,6 +10,7 @@ import (
 	"tech-challenge-order/internal/service"
 	"testing"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -648,6 +649,16 @@ func createJsonRequest(method, endpoint string, request interface{}) *http.Reque
 	json, _ := json.Marshal(request)
 	req := httptest.NewRequest(method, endpoint, bytes.NewReader(json))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE3MTA4Mjg3NTYsInVzZXJJZCI6IjdiZTdmYTBkLTUyY2ItNGMyNS04ODdhLWMzMDk1NTg2OTkwYyJ9.WRoYDnWuJAd4x4m038sZkjxwQ25O_ekjQvIfIXJss5E")
+
+	token, _ := generateToken("")
+	req.Header.Set("authorization", "Berear "+token)
 	return req
+}
+
+func generateToken(userId string) (string, error) {
+	permissions := jwt.MapClaims{}
+	permissions["userId"] = userId
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, permissions)
+
+	return token.SignedString([]byte(""))
 }

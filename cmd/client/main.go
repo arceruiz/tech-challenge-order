@@ -8,22 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	PAYMENT = "payment"
-	ORDER   = "order"
-)
-
 func main() {
 	config.ParseFromFlags()
 
-	sqsInstance := sqs.NewSQS()
-
 	go func() {
-		sqsInstance.ReceiveMessage(PAYMENT)
-	}()
-
-	go func() {
-		sqsInstance.ReceiveMessage(ORDER)
+		sqs.NewSQS().Start()
 	}()
 
 	if err := rest.New(

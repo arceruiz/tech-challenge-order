@@ -111,7 +111,7 @@ func (s *orderService) CheckoutOrder(ctx context.Context, orderID string) (*cano
 
 	order.UpdatedAt = time.Now()
 
-	err = s.repo.UpdateStatus(ctx, orderID, canonical.ORDER_PAYED)
+	err = s.repo.UpdateStatus(ctx, orderID, canonical.ORDER_PAYMENT_PENDING)
 	if err != nil {
 		return nil, fmt.Errorf("payment not criated, error updating order, %w", err)
 	}

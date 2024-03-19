@@ -20,7 +20,7 @@ type productService struct {
 }
 
 func NewProduct() ProductService {
-	client, err := grpc.Dial(":"+config.Get().Server.ProductPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client, err := grpc.Dial(config.Get().Server.ProductPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logrus.Fatal(err)
 	}

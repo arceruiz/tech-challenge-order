@@ -26,3 +26,6 @@ create-payment-queue:
 
 create-payment-payed-queue:
 	awslocal sqs create-queue --queue-name paymentpayedqueue
+
+create-payment-cancelled-queue:
+	awslocal sqs create-queue --queue-name paymentcancelledqueue
