@@ -2,13 +2,17 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"tech-challenge-order/internal/canonical"
-	"tech-challenge-order/internal/integration/payment"
+	"tech-challenge-order/internal/config"
+	"tech-challenge-order/internal/integration/product"
+	"tech-challenge-order/internal/integration/sqs_publisher"
 	"tech-challenge-order/internal/repository"
 	"time"
 
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 )
 
 type OrderService interface {
@@ -18,17 +22,24 @@ type OrderService interface {
 	GetByID(context.Context, string) (*canonical.Order, error)
 	GetByStatus(context.Context, canonical.OrderStatus) ([]canonical.Order, error)
 	CheckoutOrder(context.Context, string) (*canonical.Order, error)
+	UpdateStatus(ctx context.Context, orderId string, status canonical.OrderStatus) error
 }
 
 type orderService struct {
-	repo           repository.OrderRepository
-	paymentService payment.PaymentService
+	repo                       repository.OrderRepository
+	productService             product.ProductService
+	publisher                  sqs_publisher.Publisher
+	orderQueueAddress          string
+	paymentPendingQueueAddress string
 }
 
-func NewOrderService(repository repository.OrderRepository, paymentService payment.PaymentService) OrderService {
+func NewOrderService() OrderService {
 	return &orderService{
-		repo:           repository,
-		paymentService: paymentService,
+		repo:                       repository.NewOrderRepo(),
+		productService:             product.NewProduct(),
+		publisher:                  sqs_publisher.NewSQS(),
+		orderQueueAddress:          config.Get().SQS.OrderQueue,
+		paymentPendingQueueAddress: config.Get().SQS.PaymentPendingQueue,
 	}
 }
 
@@ -38,20 +49,45 @@ func (s *orderService) GetAll(ctx context.Context) ([]canonical.Order, error) {
 
 func (s *orderService) Create(ctx context.Context, order canonical.Order) error {
 	order.ID = canonical.NewUUID()
-	order.CreatedAt = time.Now()
 	order.Status = canonical.ORDER_RECEIVED
+	order.CreatedAt = time.Now()
+
+	err := s.productService.GetProducts(ctx, order.OrderItems)
+	if err != nil {
+		return err
+	}
+
 	s.calculateTotal(&order)
 
-	_, err := s.repo.Create(ctx, order)
+	_, err = s.repo.Create(context.Background(), order)
 	if err != nil {
-		return fmt.Errorf("error creating order, %w", err)
+		return err
 	}
+
+	if err := s.publisher.SendMessage(order.ID, s.orderQueueAddress); err != nil {
+		logrus.WithError(err).WithField("order_id", order.ID)
+		return fmt.Errorf("an error occurred when creating order")
+	}
+
 	return nil
 }
 
 func (s *orderService) Update(ctx context.Context, id string, updatedOrder canonical.Order) error {
 	s.calculateTotal(&updatedOrder)
 	return s.repo.Update(ctx, id, updatedOrder)
+}
+
+func (s *orderService) UpdateStatus(ctx context.Context, orderId string, status canonical.OrderStatus) error {
+	order, err := s.repo.GetByID(ctx, orderId)
+	if err != nil {
+		return err
+	}
+
+	if order == nil {
+		return errors.New("order not found")
+	}
+
+	return s.repo.UpdateStatus(ctx, orderId, status)
 }
 
 func (s *orderService) GetByID(ctx context.Context, id string) (*canonical.Order, error) {
@@ -68,17 +104,14 @@ func (s *orderService) CheckoutOrder(ctx context.Context, orderID string) (*cano
 		return nil, fmt.Errorf("payment not criated, error searching order, %w", err)
 	}
 
-	err = s.paymentService.Create(payment.Payment{
-		PaymentType: 0,
-		OrderID:     orderID,
-	})
+	err = s.publisher.SendMessage(order.ID, s.paymentPendingQueueAddress)
 	if err != nil {
 		return nil, fmt.Errorf("error checking out order, %w", err)
 	}
 
-	order.Status = canonical.ORDER_CHECKED_OUT
 	order.UpdatedAt = time.Now()
-	err = s.repo.Update(ctx, orderID, *order)
+
+	err = s.repo.UpdateStatus(ctx, orderID, canonical.ORDER_PAYMENT_PENDING)
 	if err != nil {
 		return nil, fmt.Errorf("payment not criated, error updating order, %w", err)
 	}

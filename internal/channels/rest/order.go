@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"tech-challenge-order/internal/auth/token"
 	"tech-challenge-order/internal/canonical"
 	"tech-challenge-order/internal/service"
 
@@ -14,14 +15,13 @@ type order struct {
 	service service.OrderService
 }
 
-func NewOrderChannel(orderService service.OrderService) Order {
+func NewOrderChannel() Order {
 	return &order{
-		service: orderService,
+		service: service.NewOrderService(),
 	}
 }
 
 func (p *order) RegisterGroup(g *echo.Group) {
-	g.GET("", p.Get)
 	g.GET("/", p.Get)
 	g.POST("/", p.Create)
 	g.PUT("/:id", p.Update)
@@ -65,10 +65,12 @@ func (p *order) get(ctx context.Context, orderID string, status string) ([]Order
 
 	var response []OrderResponse
 	if status != "" {
+
 		status, ok := canonical.MapOrderStatus[status]
 		if !ok {
 			return nil, fmt.Errorf("invalid status")
 		}
+
 		orders, err := p.service.GetByStatus(ctx, status)
 		if err != nil {
 			return nil, err
@@ -102,13 +104,22 @@ func (p *order) Create(c echo.Context) error {
 		})
 	}
 
-	orderCan := orderRequest.toCanonical()
-	if orderCan == nil {
+	if orderRequest.OrderItems == nil {
 		return c.JSON(http.StatusBadRequest, Response{
 			Message: fmt.Errorf("invalid data").Error(),
 		})
 	}
-	err := p.service.Create(c.Request().Context(), *orderCan)
+
+	customerId, err := token.ExtractCustomerId(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{
+			Message: fmt.Errorf("invalid customer").Error(),
+		})
+	}
+
+	orderCan := orderRequest.toCanonical(customerId)
+
+	err = p.service.Create(context.Background(), *orderCan)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Response{
 			Message: err.Error(),
@@ -133,13 +144,22 @@ func (p *order) Update(c echo.Context) error {
 		})
 	}
 
-	orderCan := orderRequest.toCanonical()
-	if orderCan == nil {
+	if orderRequest.OrderItems == nil {
 		return c.JSON(http.StatusBadRequest, Response{
 			Message: fmt.Errorf("invalid data").Error(),
 		})
 	}
-	err := p.service.Update(c.Request().Context(), orderID, *orderCan)
+
+	customerId, err := token.ExtractCustomerId(c.Request())
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{
+			Message: fmt.Errorf("invalid customer").Error(),
+		})
+	}
+
+	orderCan := orderRequest.toCanonical(customerId)
+
+	err = p.service.Update(c.Request().Context(), orderID, *orderCan)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Response{
 			Message: err.Error(),
@@ -162,19 +182,7 @@ func (p *order) UpdateStatus(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "invalid status"})
 	}
 
-	order, err := p.service.GetByID(c.Request().Context(), orderID)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{
-			Message: "error searching order: " + err.Error(),
-		})
-	}
-	if order == nil {
-		return c.JSON(http.StatusNotFound, Response{Message: "order not found"})
-	}
-
-	order.Status = status
-
-	err = p.service.Update(c.Request().Context(), orderID, *order)
+	err := p.service.UpdateStatus(c.Request().Context(), orderID, status)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Response{
 			Message: "error updating order: " + err.Error(),

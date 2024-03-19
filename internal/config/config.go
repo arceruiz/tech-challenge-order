@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	Cfg Config
+	conf Config
 )
 
 type Config struct {
@@ -16,12 +16,20 @@ type Config struct {
 		Key string `cfg:"key"`
 	} `cfg:"token"`
 	Server struct {
-		Port                   string `cfg:"port"`
-		PaymentIntegrationHost string `cfg:"paymentIntegrationHost"`
+		Port        string `cfg:"port"`
+		ProductPort string `cfg:"product_integration"`
 	} `cfg:"server"`
 	DB struct {
 		ConnectionString string `cfg:"connectionString"`
 	} `cfg:"db"`
+	SQS struct {
+		PaymentPendingQueue   string `cfg:"payment_pending_queue"`
+		PaymentPayedQueue     string `cfg:"payment_payed_queue"`
+		PaymentCancelledQueue string `cfg:"payment_cancelled_queue"`
+		OrderQueue            string `cfg:"order_queue"`
+		Region                string `cfg:"region"`
+		Endpoint              string `cfg:"endpoint"`
+	} `cfg:"sqs"`
 }
 
 func ParseFromFlags() {
@@ -34,10 +42,14 @@ func ParseFromFlags() {
 }
 
 func parse(dirs ...string) {
-	if err := cfg.Load(&Cfg,
+	if err := cfg.Load(&conf,
 		cfg.Dirs(dirs...),
 		cfg.UseEnv("app"),
 	); err != nil {
 		log.Panic(err)
 	}
+}
+
+func Get() Config {
+	return conf
 }

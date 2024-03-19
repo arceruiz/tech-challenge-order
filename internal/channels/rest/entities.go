@@ -14,37 +14,25 @@ type ProductItem struct {
 }
 
 type OrderRequest struct {
-	ID         string
-	CustomerID string      `json:"customer_id,omitempty"`
-	Status     string      `json:"status,omitempty"`
-	CreatedAt  time.Time   `json:"created_at,omitempty"`
-	UpdatedAt  time.Time   `json:"updated_at,omitempty"`
-	Total      float64     `json:"total,omitempty"`
 	OrderItems []OrderItem `json:"products,omitempty"`
 }
 
 type OrderResponse struct {
-	ID         string      `json:"id,omitempty"`
-	CustomerID string      `json:"customer_id,omitempty"`
-	Status     string      `json:"status,omitempty"`
-	CreatedAt  time.Time   `json:"created_at,omitempty"`
-	UpdatedAt  time.Time   `json:"updated_at,omitempty"`
-	Products   []OrderItem `json:"products,omitempty"`
+	ID         string              `json:"id,omitempty"`
+	CustomerID string              `json:"customer_id,omitempty"`
+	Status     string              `json:"status,omitempty"`
+	CreatedAt  time.Time           `json:"created_at,omitempty"`
+	UpdatedAt  time.Time           `json:"updated_at,omitempty"`
+	Products   []OrderItemResponse `json:"products,omitempty"`
+	Total      float64             `json:"total,omitempty"`
 }
 
 type OrderItem struct {
+	ProductId string `json:"product_id"`
+	Quantity  int64  `json:"quantity"`
+}
+
+type OrderItemResponse struct {
 	ProductItem
 	Quantity int64 `json:"quantity"`
-}
-
-type PaymentRest struct {
-	ID          int       `json:"id"`
-	PaymentType int       `json:"payment_type"`
-	CreatedAt   time.Time `json:"created_at"`
-	Status      int       `json:"status"`
-}
-
-type PaymentCallback struct {
-	OrderID string `json:"order_id"`
-	Status  string `json:"status"`
 }
