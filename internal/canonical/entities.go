@@ -20,13 +20,13 @@ type Product struct {
 }
 
 type Order struct {
-	ID         string      `bson:"_id"`
-	CustomerID string      `bson:"customer_id"`
-	Status     OrderStatus `bson:"status"`
-	CreatedAt  time.Time   `bson:"created_at"`
-	UpdatedAt  time.Time   `bson:"updated_at"`
-	Total      float64     `bson:"total"`
-	OrderItems []OrderItem `bson:"order_items"`
+	ID         string                `bson:"_id"`
+	CustomerID string                `bson:"customer_id"`
+	Status     OrderStatus           `bson:"status"`
+	CreatedAt  time.Time             `bson:"created_at"`
+	UpdatedAt  time.Time             `bson:"updated_at"`
+	Total      float64               `bson:"total"`
+	OrderItems map[string]*OrderItem `bson:"order_items"`
 }
 
 type OrderItem struct {
@@ -37,25 +37,21 @@ type OrderItem struct {
 type OrderStatus int
 
 const (
-	ORDER_RECEIVED    OrderStatus = iota // Order created, must be checked out
-	ORDER_CHECKED_OUT                    // Order checked out, must be payed
-	ORDER_PAYED                          // Order payed, must be prepared
-	ORDER_PREPARING                      // Order being prepared, must be ready
-	ORDER_READY                          // Order ready, must be delivered
-	ORDER_DELIEVERED                     // Order delivered, must be concluded
-	ORDER_COMPLETED                      // Order concluded
-	ORDER_CANCELLED                      // Order cancelled
+	ORDER_RECEIVED        = 0
+	ORDER_PAYMENT_PENDING = 1
+	ORDER_PAYED           = 2
+	ORDER_PREPARING       = 3
+	ORDER_COMPLETED       = 4
+	ORDER_CANCELLED       = 5
 )
 
-var MapOrderStatus = map[string]OrderStatus{ //ajustar chaves
-	"RECEIVED":    ORDER_RECEIVED,
-	"CHECKED_OUT": ORDER_CHECKED_OUT,
-	"PAYED":       ORDER_PAYED,
-	"PREPARING":   ORDER_PREPARING,
-	"READY":       ORDER_READY,
-	"DELIEVERE":   ORDER_DELIEVERED,
-	"COMPLETED":   ORDER_COMPLETED,
-	"CANCELLED":   ORDER_CANCELLED,
+var MapOrderStatus = map[string]OrderStatus{
+	"RECEIVED":        ORDER_RECEIVED,
+	"PAYMENT_PENDING": ORDER_PAYMENT_PENDING,
+	"PAYED":           ORDER_PAYED,
+	"PREPARING":       ORDER_PREPARING,
+	"COMPLETED":       ORDER_COMPLETED,
+	"CANCELLED":       ORDER_CANCELLED,
 }
 
 func HandleError(err error) error {

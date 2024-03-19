@@ -7,17 +7,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/undefinedlabs/go-mpatch"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
 func TestOrderRepository_GetByID(t *testing.T) {
-
-	mpatch.PatchMethod(time.Now, func() time.Time {
-		return time.Date(2020, 11, 01, 00, 00, 00, 0, time.UTC)
-	})
-
 	type Given struct {
 		mtestFunc func(mt *mtest.T)
 	}
@@ -45,22 +39,27 @@ func TestOrderRepository_GetByID(t *testing.T) {
 								{Key: "created_at", Value: time.Now()},
 								{Key: "updated_at", Value: time.Now()},
 								{Key: "total", Value: 0.0},
-								{Key: "order_items", Value: []bson.D{
-									{
-										{Key: "quantity", Value: 5},
-										{Key: "product_id", Value: "product_id"},
-										{Key: "name", Value: "product_name"},
-										{Key: "price", Value: 10.0},
-										{Key: "category", Value: "product_category"},
+								{
+									Key: "order_items", Value: bson.D{
+										{
+											Key: "product_id_1", Value: bson.D{
+												{Key: "product_id", Value: "product_id_1"},
+												{Key: "name", Value: "product_name_1"},
+												{Key: "price", Value: 10.0},
+												{Key: "category", Value: "product_category_1"},
+												{Key: "quantity", Value: 5},
+											},
+										},
+										{
+											Key: "product_id_2", Value: bson.D{
+												{Key: "product_id", Value: "product_id_2"},
+												{Key: "name", Value: "product_name_2"},
+												{Key: "price", Value: 20.0},
+												{Key: "category", Value: "product_category_2"},
+												{Key: "quantity", Value: 10},
+											},
+										},
 									},
-									{
-										{Key: "quantity", Value: 10},
-										{Key: "product_id", Value: "product_id"},
-										{Key: "name", Value: "product_name"},
-										{Key: "price", Value: 10.0},
-										{Key: "category", Value: "product_category"},
-									},
-								},
 								},
 							},
 						),
@@ -68,7 +67,7 @@ func TestOrderRepository_GetByID(t *testing.T) {
 					order, err := repo.GetByID(context.Background(), "order_valid_id")
 					assert.Nil(t, err)
 					assert.Equal(t, order.ID, "order_valid_id")
-					assert.Equal(t, order.Status, canonical.ORDER_RECEIVED)
+					assert.Equal(t, int(order.Status), canonical.ORDER_RECEIVED)
 				},
 			},
 		},
@@ -95,11 +94,6 @@ func TestOrderRepository_GetByID(t *testing.T) {
 }
 
 func TestOrderRepository_GetAll(t *testing.T) {
-
-	mpatch.PatchMethod(time.Now, func() time.Time {
-		return time.Date(2020, 11, 01, 00, 00, 00, 0, time.UTC)
-	})
-
 	type Given struct {
 		mtestFunc func(mt *mtest.T)
 	}
@@ -123,22 +117,27 @@ func TestOrderRepository_GetAll(t *testing.T) {
 						{Key: "created_at", Value: time.Now()},
 						{Key: "updated_at", Value: time.Now()},
 						{Key: "total", Value: 0.0},
-						{Key: "order_items", Value: []bson.D{
-							{
-								{Key: "quantity", Value: 5},
-								{Key: "product_id", Value: "product_id"},
-								{Key: "name", Value: "product_name"},
-								{Key: "price", Value: 10.0},
-								{Key: "category", Value: "product_category"},
+						{
+							Key: "order_items", Value: bson.D{
+								{
+									Key: "product_id_1", Value: bson.D{
+										{Key: "product_id", Value: "product_id_1"},
+										{Key: "name", Value: "product_name_1"},
+										{Key: "price", Value: 10.0},
+										{Key: "category", Value: "product_category_1"},
+										{Key: "quantity", Value: 5},
+									},
+								},
+								{
+									Key: "product_id_2", Value: bson.D{
+										{Key: "product_id", Value: "product_id_2"},
+										{Key: "name", Value: "product_name_2"},
+										{Key: "price", Value: 20.0},
+										{Key: "category", Value: "product_category_2"},
+										{Key: "quantity", Value: 10},
+									},
+								},
 							},
-							{
-								{Key: "quantity", Value: 10},
-								{Key: "product_id", Value: "product_id"},
-								{Key: "name", Value: "product_name"},
-								{Key: "price", Value: 10.0},
-								{Key: "category", Value: "product_category"},
-							},
-						},
 						},
 					})
 					getMore := mtest.CreateCursorResponse(1, "order.order", mtest.NextBatch, bson.D{
@@ -148,23 +147,22 @@ func TestOrderRepository_GetAll(t *testing.T) {
 						{Key: "created_at", Value: time.Now()},
 						{Key: "updated_at", Value: time.Now()},
 						{Key: "total", Value: 0.0},
-						{Key: "order_items", Value: []bson.D{
-							{
+						{Key: "order_items", Value: bson.D{
+							{Key: "product_id_1", Value: bson.D{
+								{Key: "product_id", Value: "product_id_1"},
+								{Key: "name", Value: "product_name_1"},
+								{Key: "price", Value: 10.0},
+								{Key: "category", Value: "product_category_1"},
 								{Key: "quantity", Value: 5},
-								{Key: "product_id", Value: "product_id"},
-								{Key: "name", Value: "product_name"},
-								{Key: "price", Value: 10.0},
-								{Key: "category", Value: "product_category"},
-							},
-							{
+							}},
+							{Key: "product_id_2", Value: bson.D{
+								{Key: "product_id", Value: "product_id_2"},
+								{Key: "name", Value: "product_name_2"},
+								{Key: "price", Value: 20.0},
+								{Key: "category", Value: "product_category_2"},
 								{Key: "quantity", Value: 10},
-								{Key: "product_id", Value: "product_id"},
-								{Key: "name", Value: "product_name"},
-								{Key: "price", Value: 10.0},
-								{Key: "category", Value: "product_category"},
-							},
-						},
-						},
+							}},
+						}},
 					})
 					lastCursor := mtest.CreateCursorResponse(0, "order.order", mtest.NextBatch)
 					mt.AddMockResponses(first, getMore, lastCursor)
@@ -173,7 +171,7 @@ func TestOrderRepository_GetAll(t *testing.T) {
 					assert.Nil(t, err)
 					for _, order := range orders {
 						assert.Equal(t, order.ID, "order_valid_id")
-						assert.Equal(t, order.Status, canonical.ORDER_RECEIVED)
+						assert.Equal(t, int(order.Status), canonical.ORDER_RECEIVED)
 					}
 				},
 			},
@@ -201,11 +199,6 @@ func TestOrderRepository_GetAll(t *testing.T) {
 }
 
 func TestOrderRepository_GetByCategory(t *testing.T) {
-
-	mpatch.PatchMethod(time.Now, func() time.Time {
-		return time.Date(2020, 11, 01, 00, 00, 00, 0, time.UTC)
-	})
-
 	type Given struct {
 		mtestFunc func(mt *mtest.T)
 	}
@@ -305,11 +298,6 @@ func TestOrderRepository_GetByCategory(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-
-	mpatch.PatchMethod(time.Now, func() time.Time {
-		return time.Date(2020, 11, 01, 00, 00, 00, 0, time.UTC)
-	})
-
 	type Given struct {
 		mtestFunc func(mt *mtest.T)
 	}
@@ -330,12 +318,12 @@ func TestCreate(t *testing.T) {
 					order := canonical.Order{
 						ID:         "order_valid_id",
 						CustomerID: "order_valid_customer_id",
-						Status:     canonical.ORDER_CHECKED_OUT,
+						Status:     canonical.ORDER_RECEIVED,
 						CreatedAt:  time.Now(),
 						UpdatedAt:  time.Now(),
 						Total:      1000,
-						OrderItems: []canonical.OrderItem{
-							{
+						OrderItems: map[string]*canonical.OrderItem{
+							"product_valid_id": {
 								Product: canonical.Product{
 									ID:       "product_valid_id",
 									Name:     "product_valid_name",
@@ -344,7 +332,7 @@ func TestCreate(t *testing.T) {
 								},
 								Quantity: 10,
 							},
-							{
+							"product_valid_id1": {
 								Product: canonical.Product{
 									ID:       "product_valid_id",
 									Name:     "product_valid_name",
@@ -379,12 +367,12 @@ func TestCreate(t *testing.T) {
 					order := canonical.Order{
 						ID:         "order_valid_id",
 						CustomerID: "order_valid_customer_id",
-						Status:     canonical.ORDER_CHECKED_OUT,
+						Status:     canonical.ORDER_RECEIVED,
 						CreatedAt:  time.Now(),
 						UpdatedAt:  time.Now(),
 						Total:      1000,
-						OrderItems: []canonical.OrderItem{
-							{
+						OrderItems: map[string]*canonical.OrderItem{
+							"product_valid_id": {
 								Product: canonical.Product{
 									ID:       "product_valid_id",
 									Name:     "product_valid_name",
@@ -393,7 +381,7 @@ func TestCreate(t *testing.T) {
 								},
 								Quantity: 10,
 							},
-							{
+							"product_valid_id1": {
 								Product: canonical.Product{
 									ID:       "product_valid_id",
 									Name:     "product_valid_name",
@@ -422,11 +410,6 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-
-	mpatch.PatchMethod(time.Now, func() time.Time {
-		return time.Date(2020, 11, 01, 00, 00, 00, 0, time.UTC)
-	})
-
 	type Given struct {
 		mtestFunc func(mt *mtest.T)
 	}
@@ -474,12 +457,12 @@ func TestUpdate(t *testing.T) {
 					order := canonical.Order{
 						ID:         "order_valid_id",
 						CustomerID: "order_valid_customer_id",
-						Status:     canonical.ORDER_CHECKED_OUT,
+						Status:     canonical.ORDER_RECEIVED,
 						CreatedAt:  time.Now(),
 						UpdatedAt:  time.Now(),
 						Total:      1000,
-						OrderItems: []canonical.OrderItem{
-							{
+						OrderItems: map[string]*canonical.OrderItem{
+							"product_valid_id": {
 								Product: canonical.Product{
 									ID:       "product_valid_id",
 									Name:     "product_valid_name",
@@ -488,7 +471,7 @@ func TestUpdate(t *testing.T) {
 								},
 								Quantity: 10,
 							},
-							{
+							"product_valid_id1": {
 								Product: canonical.Product{
 									ID:       "product_valid_id",
 									Name:     "product_valid_name",
@@ -525,7 +508,7 @@ func TestUpdate(t *testing.T) {
 						CreatedAt:  time.Time{},
 						UpdatedAt:  time.Time{},
 						Total:      0,
-						OrderItems: []canonical.OrderItem{},
+						OrderItems: map[string]*canonical.OrderItem{},
 					}
 
 					err := repo.Update(context.Background(), "product_valid", product)
@@ -541,4 +524,24 @@ func TestUpdate(t *testing.T) {
 		db := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 		db.Run("", tc.given.mtestFunc)
 	}
+}
+
+func TestUpdateStatus(t *testing.T) {
+	f := func(mt *mtest.T) {
+		mt.AddMockResponses(bson.D{
+			{Key: "ok", Value: 1},
+		})
+
+		svc := orderRepository{
+			collection: mt.Coll,
+		}
+
+		err := svc.UpdateStatus(context.Background(), "123", canonical.ORDER_COMPLETED)
+
+		assert.Nil(t, err)
+	}
+
+	db := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	db.Run("test", f)
 }

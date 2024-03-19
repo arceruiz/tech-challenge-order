@@ -9,3 +9,20 @@ test:
 
 test-build-bake:
 	docker build -t mauricio1998/order-service . -f build/Dockerfile
+
+run-localstack:
+	docker run --rm -it -p 4566:4566 localstack/localstack
+
+run-infra: connect-localstack create-order-queue create-payment-queue create-payment-payed-queue
+
+connect-localstack:
+	awslocal kinesis list-streams
+
+create-order-queue:
+	awslocal sqs create-queue --queue-name orderqueue
+
+create-payment-queue:
+	awslocal sqs create-queue --queue-name paymentpendingqueue
+
+create-payment-payed-queue:
+	awslocal sqs create-queue --queue-name paymentpayedqueue

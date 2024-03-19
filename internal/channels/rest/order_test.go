@@ -7,10 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"tech-challenge-order/internal/canonical"
-	"tech-challenge-order/internal/mocks"
 	"tech-challenge-order/internal/service"
 	"testing"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +33,7 @@ func TestRegisterGroup(t *testing.T) {
 		"given valid group, should register endpoints successfully": {
 			given: Given{
 				group:        echo.New().Group("/order"),
-				orderService: &mocks.OrderServiceMock{},
+				orderService: &OrderServiceMock{},
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -83,15 +81,13 @@ func TestCreate(t *testing.T) {
 		"given normal json income must process normally": {
 			given: Given{
 				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
-					ID:         "",
-					CustomerID: "",
-					Status:     "",
-					CreatedAt:  time.Time{},
-					UpdatedAt:  time.Time{},
-					Total:      0,
-					OrderItems: []OrderItem{},
+					OrderItems: []OrderItem{
+						{
+							ProductId: "product_id",
+						},
+					},
 				}),
-				orderService: mockOrderServiceForCreate(canonical.Order{}),
+				orderService: mockOrderServiceForCreate1("product_id", nil, 1),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -100,8 +96,14 @@ func TestCreate(t *testing.T) {
 		},
 		"given error creating, must return error": {
 			given: Given{
-				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
-				orderService: mockOrderServiceForCreateError(canonical.Order{}),
+				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
+					OrderItems: []OrderItem{
+						{
+							ProductId: "product_id",
+						},
+					},
+				}),
+				orderService: mockOrderServiceForCreate1("product_id", errors.New("generic error"), 1),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -111,15 +113,8 @@ func TestCreate(t *testing.T) {
 		"given status unrecognized, must return error": {
 			given: Given{
 				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
-					ID:         "",
-					CustomerID: "",
-					Status:     "asdasd",
-					CreatedAt:  time.Time{},
-					UpdatedAt:  time.Time{},
-					Total:      0,
 					OrderItems: []OrderItem{},
 				}),
-				orderService: mockOrderServiceForCreate(canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -128,8 +123,7 @@ func TestCreate(t *testing.T) {
 		},
 		"given wrong format must return error": {
 			given: Given{
-				request:      createRequest(http.MethodPost, endpoint),
-				orderService: mockOrderServiceForCreate(canonical.Order{}),
+				request: createRequest(http.MethodPost, endpoint),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -138,8 +132,7 @@ func TestCreate(t *testing.T) {
 		},
 		"given invalid data, must return bad request": {
 			given: Given{
-				request:      createRequest(http.MethodPost, endpoint),
-				orderService: mockOrderServiceForCreate(canonical.Order{}),
+				request: createRequest(http.MethodPost, endpoint),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -183,20 +176,32 @@ func TestUpdate(t *testing.T) {
 	}{
 		"given normal json income must process normally": {
 			given: Given{
-				pathParamID:  "valid_ID",
-				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
-				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				pathParamID: "valid_ID",
+				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
+					OrderItems: []OrderItem{
+						{
+							ProductId: "valid_ID",
+						},
+					},
+				}),
+				orderService: mockOrderServiceForUpdate1("valid_ID", nil),
 			},
 			expected: Expected{
 				err:        assert.NoError,
 				statusCode: http.StatusOK,
 			},
 		},
-		"given given error updating, must return error": {
+		"given error updating, must return error": {
 			given: Given{
-				pathParamID:  "invalid_ID",
-				request:      createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
-				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				pathParamID: "invalid_ID",
+				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
+					OrderItems: []OrderItem{
+						{
+							ProductId: "invalid_ID",
+						},
+					},
+				}),
+				orderService: mockOrderServiceForUpdate1("invalid_ID", errors.New("generic error")),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -205,9 +210,8 @@ func TestUpdate(t *testing.T) {
 		},
 		"given wrong format must return error": {
 			given: Given{
-				pathParamID:  "valid_ID",
-				request:      createRequest(http.MethodPost, endpoint),
-				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				pathParamID: "valid_ID",
+				request:     createRequest(http.MethodPost, endpoint),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -216,9 +220,8 @@ func TestUpdate(t *testing.T) {
 		},
 		"given invalid data, must return bad request": {
 			given: Given{
-				pathParamID:  "invalid_ID",
-				request:      createRequest(http.MethodPost, endpoint),
-				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				pathParamID: "invalid_ID",
+				request:     createRequest(http.MethodPost, endpoint),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -227,9 +230,8 @@ func TestUpdate(t *testing.T) {
 		},
 		"given empty id data, must return bad request": {
 			given: Given{
-				pathParamID:  "",
-				request:      createRequest(http.MethodPost, endpoint),
-				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				pathParamID: "",
+				request:     createRequest(http.MethodPost, endpoint),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -240,15 +242,8 @@ func TestUpdate(t *testing.T) {
 			given: Given{
 				pathParamID: "valid_ID",
 				request: createJsonRequest(http.MethodPost, endpoint, OrderRequest{
-					ID:         "",
-					CustomerID: "",
-					Status:     "asdasd",
-					CreatedAt:  time.Time{},
-					UpdatedAt:  time.Time{},
-					Total:      0,
 					OrderItems: []OrderItem{},
 				}),
-				orderService: mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -302,7 +297,7 @@ func TestUpdateStatus(t *testing.T) {
 				pathParamKey:   "status",
 				pathParamValue: "RECEIVED",
 				request:        createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
-				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				orderService:   mockOrderServiceForUpdateStatus("valid_ID", nil),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -315,7 +310,7 @@ func TestUpdateStatus(t *testing.T) {
 				pathParamKey:   "status",
 				pathParamValue: "RECEIVED",
 				request:        createRequest(http.MethodPost, endpoint),
-				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				orderService:   mockOrderServiceForUpdateStatus("invalid_ID", errors.New("generic error")),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -328,20 +323,6 @@ func TestUpdateStatus(t *testing.T) {
 				pathParamKey:   "status",
 				pathParamValue: "RECEIVED",
 				request:        createRequest(http.MethodPost, endpoint),
-				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
-			},
-			expected: Expected{
-				err:        assert.NoError,
-				statusCode: http.StatusBadRequest,
-			},
-		},
-		"given wring status, must return bad request": {
-			given: Given{
-				pathParamID:    "valid_ID",
-				pathParamKey:   "status",
-				pathParamValue: "assdasdasdasd",
-				request:        createRequest(http.MethodPost, endpoint),
-				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
 			},
 			expected: Expected{
 				err:        assert.NoError,
@@ -354,24 +335,11 @@ func TestUpdateStatus(t *testing.T) {
 				pathParamKey:   "status",
 				pathParamValue: "RECEIVED",
 				request:        createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
-				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
+				orderService:   mockOrderServiceForUpdateStatus("invalid_ID_updt", errors.New("generic error")),
 			},
 			expected: Expected{
 				err:        assert.NoError,
 				statusCode: http.StatusInternalServerError,
-			},
-		},
-		"given error retrieving order, must return not found": {
-			given: Given{
-				pathParamID:    "invalid_ID_nil",
-				pathParamKey:   "status",
-				pathParamValue: "RECEIVED",
-				request:        createJsonRequest(http.MethodPost, endpoint, OrderRequest{}),
-				orderService:   mockOrderServiceForUpdate("valid_ID", canonical.Order{}),
-			},
-			expected: Expected{
-				err:        assert.NoError,
-				statusCode: http.StatusNotFound,
 			},
 		},
 	}
@@ -585,42 +553,24 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func mockOrderServiceForUpdate(id string, orderReturned canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
+func mockOrderServiceForUpdate1(id string, errToReturn error) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
 
-	mockOrderSvc.
-		On("GetByID", mock.Anything, id).
-		Return(&orderReturned, nil)
-
-	mockOrderSvc.
-		On("GetByID", mock.Anything, "invalid_ID_updt").
-		Return(&orderReturned, nil)
-
-	mockOrderSvc.
-		On("GetByID", mock.Anything, "invalid_ID").
-		Return(&orderReturned, errors.New(""))
-
-	mockOrderSvc.
-		On("GetByID", mock.Anything, "invalid_ID_nil").
-		Return(nil, nil)
-
-	mockOrderSvc.
-		On("Update", mock.Anything, id, orderReturned).
-		Return(nil)
-
-	mockOrderSvc.
-		On("Update", mock.Anything, "invalid_ID", orderReturned).
-		Return(errors.New(""))
-
-	mockOrderSvc.
-		On("Update", mock.Anything, "invalid_ID_updt", orderReturned).
-		Return(errors.New(""))
+	mockOrderSvc.On("Update", id).Return(errToReturn)
 
 	return mockOrderSvc
 }
 
-func mockOrderServiceForCheckout(id string, orderReturned canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
+func mockOrderServiceForUpdateStatus(id string, errToReturn error) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
+
+	mockOrderSvc.On("UpdateStatus", id).Return(errToReturn)
+
+	return mockOrderSvc
+}
+
+func mockOrderServiceForCheckout(id string, orderReturned canonical.Order) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
 
 	mockOrderSvc.
 		On("CheckoutOrder", mock.Anything, id).
@@ -637,8 +587,8 @@ func mockOrderServiceForCheckout(id string, orderReturned canonical.Order) *mock
 	return mockOrderSvc
 }
 
-func mockOrderServiceForGetByStatus(status canonical.OrderStatus, orderReturned []canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
+func mockOrderServiceForGetByStatus(status canonical.OrderStatus, orderReturned []canonical.Order) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
 
 	mockOrderSvc.
 		On("GetByStatus", mock.Anything, status).
@@ -647,8 +597,8 @@ func mockOrderServiceForGetByStatus(status canonical.OrderStatus, orderReturned 
 	return mockOrderSvc
 }
 
-func mockOrderServiceForGetByID(orderID string, orderReturned *canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
+func mockOrderServiceForGetByID(orderID string, orderReturned *canonical.Order) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
 
 	mockOrderSvc.
 		On("GetByID", mock.Anything, orderID).
@@ -657,8 +607,8 @@ func mockOrderServiceForGetByID(orderID string, orderReturned *canonical.Order) 
 	return mockOrderSvc
 }
 
-func mockOrderServiceForGetAll(orderReturned []canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
+func mockOrderServiceForGetAll(orderReturned []canonical.Order) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
 
 	mockOrderSvc.
 		On("GetAll", mock.Anything).
@@ -666,8 +616,8 @@ func mockOrderServiceForGetAll(orderReturned []canonical.Order) *mocks.OrderServ
 	return mockOrderSvc
 }
 
-func mockOrderServiceForGetAll_error(orderReturned []canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
+func mockOrderServiceForGetAll_error(orderReturned []canonical.Order) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
 
 	mockOrderSvc.
 		On("GetAll", mock.Anything).
@@ -676,23 +626,15 @@ func mockOrderServiceForGetAll_error(orderReturned []canonical.Order) *mocks.Ord
 	return mockOrderSvc
 }
 
-func mockOrderServiceForCreate(orderReceived canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
-	mockOrderSvc.On("Create", mock.Anything, orderReceived).Return(nil)
-	mockOrderSvc.On("Create", mock.Anything, canonical.Order{
-		ID:         "invalid_ID",
-		CustomerID: "",
-		Status:     0,
-		CreatedAt:  time.Time{},
-		UpdatedAt:  time.Time{},
-		Total:      0,
-		OrderItems: []canonical.OrderItem{},
-	}).Return(errors.New(""))
-	return mockOrderSvc
-}
-func mockOrderServiceForCreateError(orderReceived canonical.Order) *mocks.OrderServiceMock {
-	mockOrderSvc := new(mocks.OrderServiceMock)
-	mockOrderSvc.On("Create", mock.Anything, orderReceived).Return(errors.New(""))
+func mockOrderServiceForCreate1(idInput string, errReturn error, times int) *OrderServiceMock {
+	mockOrderSvc := new(OrderServiceMock)
+
+	mockOrderSvc.On("Create", mock.Anything, mock.MatchedBy(func(id canonical.Order) bool {
+		_, ok := id.OrderItems[idInput]
+
+		return ok
+	})).Return(errReturn).Times(times)
+
 	return mockOrderSvc
 }
 
@@ -706,5 +648,6 @@ func createJsonRequest(method, endpoint string, request interface{}) *http.Reque
 	json, _ := json.Marshal(request)
 	req := httptest.NewRequest(method, endpoint, bytes.NewReader(json))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE3MTA4Mjg3NTYsInVzZXJJZCI6IjdiZTdmYTBkLTUyY2ItNGMyNS04ODdhLWMzMDk1NTg2OTkwYyJ9.WRoYDnWuJAd4x4m038sZkjxwQ25O_ekjQvIfIXJss5E")
 	return req
 }

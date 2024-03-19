@@ -7,10 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var (
-	cfg = &config.Cfg
-)
-
 type Order interface {
 	RegisterGroup(g *echo.Group)
 	Create(c echo.Context) error
@@ -40,5 +36,5 @@ func (r rest) Start() error {
 	r.order.RegisterGroup(orderGroup)
 	//orderGroup.Use(middlewares.Authorization)
 
-	return router.Start(":" + cfg.Server.Port)
+	return router.Start(":" + config.Get().Server.Port)
 }

@@ -1,4 +1,4 @@
-package mocks
+package rest
 
 import (
 	"context"
@@ -22,7 +22,8 @@ func (m *OrderServiceMock) Create(ctx context.Context, order canonical.Order) er
 }
 
 func (m *OrderServiceMock) Update(ctx context.Context, id string, order canonical.Order) error {
-	args := m.Called(ctx, id, order)
+	args := m.Called(id)
+
 	return args.Error(0)
 }
 
@@ -45,4 +46,10 @@ func (m *OrderServiceMock) CheckoutOrder(ctx context.Context, id string) (*canon
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*canonical.Order), args.Error(1)
+}
+
+func (m *OrderServiceMock) UpdateStatus(ctx context.Context, orderId string, status canonical.OrderStatus) error {
+	args := m.Called(orderId)
+
+	return args.Error(0)
 }

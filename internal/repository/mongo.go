@@ -10,13 +10,12 @@ import (
 )
 
 var (
-	cfg           = &config.Cfg
 	ErrorNotFound = errors.New("entity not found")
 	database      = "order"
 )
 
 func NewMongo() *mongo.Database {
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(cfg.DB.ConnectionString))
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(config.Get().DB.ConnectionString))
 	if err != nil {
 		panic(err)
 	}

@@ -18,6 +18,7 @@ type OrderRepository interface {
 	Update(context.Context, string, canonical.Order) error
 	GetByID(context.Context, string) (*canonical.Order, error)
 	GetByStatus(context.Context, int) ([]canonical.Order, error)
+	UpdateStatus(context.Context, string, canonical.OrderStatus) error
 }
 
 type orderRepository struct {
@@ -46,6 +47,19 @@ func (r *orderRepository) Create(ctx context.Context, order canonical.Order) (*c
 		return nil, err
 	}
 	return &order, nil
+}
+
+func (r *orderRepository) UpdateStatus(ctx context.Context, id string, status canonical.OrderStatus) error {
+	filter := bson.M{"_id": id}
+	field := bson.M{"$set": bson.M{
+		"status": status,
+	}}
+
+	_, err := r.collection.UpdateOne(ctx, filter, field)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *orderRepository) Update(ctx context.Context, id string, updatedOrder canonical.Order) error {

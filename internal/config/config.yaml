@@ -1,5 +1,14 @@
 server:
   port: 3003
+  grpc_port: "3006"
   paymentIntegrationHost: http://localhost:3001
+token:
+  key: "dnVJWGFPSzRPcEpXQTl5U1gxVVRwSVdzaFhQcFA2bmVHS0dBNzI0RmF1WQ=="
 db:
   connectionString: mongodb://root:password@0.0.0.0:27017/
+sqs:
+  endpoint: "http://localhost:4566"
+  region: sa-east-1
+  payment_pending_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentpendingqueue
+  order_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/orderqueue
+  payment_payed_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentpayedqueue
