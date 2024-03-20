@@ -2,7 +2,7 @@
 
 # Description
 
-This service is responsible to manage the orders and recieve updates from payment service. We have a diagram about a flow of this service here: [CRUD Flow ](./docs/diagrams/image.png), [Checkout Flow](./docs/diagrams/image2.png) 
+This service is responsible to manage the orders and recieve updates from a SQS queue. We have a diagram about a flow of this service here: [Flow ](./docs/diagrams/flow-diagram.png), [Cancelled Flow](./docs/diagrams/cancelled-diagram.png) 
 
 ## Features
 

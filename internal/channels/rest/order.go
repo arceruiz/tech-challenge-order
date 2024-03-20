@@ -22,7 +22,7 @@ func NewOrderChannel() Order {
 }
 
 func (p *order) RegisterGroup(g *echo.Group) {
-	g.GET("/", p.Get)
+	g.GET("", p.Get)
 	g.POST("/", p.Create)
 	g.PUT("/:id", p.Update)
 	g.PATCH("/", p.UpdateStatus)

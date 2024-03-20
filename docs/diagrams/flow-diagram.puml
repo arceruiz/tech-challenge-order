@@ -1,0 +1,27 @@
+@startuml
+
+actor           Client              as client
+participant     OrderService        as ordersvc
+participant     ProductService      as productsvc
+participant     Kitchen             as kitchen
+queue           payment_pending     as paymentpending
+queue           payment_payed       as paymentpayed
+queue           order_checked_out   as orderchecked
+database        OrderDB             as orderDB
+
+
+client -> ordersvc : requesting order create
+ordersvc -> orderDB : save the order with status checked_out
+ordersvc -> orderchecked : send to the queue
+ordersvc -> client : return order created
+ordersvc --> orderchecked : listen to the queue
+ordersvc <-> productsvc : get products
+ordersvc -> orderDB : save the order with status payment_pending
+ordersvc -> paymentpending : request a new payment
+ordersvc <--> paymentpayed : listen to the queue
+ordersvc -> orderDB : save the order with status payed
+ordersvc -> kitchen : webhook new order to prepare
+kitchen -> ordersvc : update order status to preparing
+kitchen -> ordersvc : update order status to completed
+
+@enduml

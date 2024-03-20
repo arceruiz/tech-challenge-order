@@ -34,7 +34,7 @@ func (r rest) Start() error {
 
 	orderGroup := mainGroup.Group("/order")
 	r.order.RegisterGroup(orderGroup)
-	//orderGroup.Use(middlewares.Authorization)
+	orderGroup.Use(middlewares.Authorization)
 
 	return router.Start(":" + config.Get().Server.Port)
 }
