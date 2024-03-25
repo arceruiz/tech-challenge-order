@@ -3,7 +3,6 @@ package sqs
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"tech-challenge-order/internal/canonical"
 	"tech-challenge-order/internal/config"
@@ -13,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -21,35 +20,40 @@ var (
 	instance QueueInterface
 )
 
+const (
+	orderQueue            = "orderQueue"
+	paymentPayedQueue     = "paymentPayedQueue"
+	paymentCancelledQueue = "paymentCancelledQueue"
+)
+
 type QueueInterface interface {
 	Start()
 }
 
 type queueSQS struct {
-	sqsService     *sqs.SQS
-	service        service.OrderService
-	queueProcessor map[string]func(queue string, ch chan *sqs.Message)
+	sqsService   *sqs.SQS
+	service      service.OrderService
+	queueAddress map[string]string
 }
 
 func NewSQS() QueueInterface {
 	once.Do(func() {
 		sess := session.Must(session.NewSessionWithOptions(session.Options{
 			Config: aws.Config{
-				Endpoint:   aws.String(config.Get().SQS.Endpoint),
 				Region:     aws.String(config.Get().SQS.Region),
 				DisableSSL: aws.Bool(true),
 			},
 		}))
 
 		sqs := &queueSQS{
-			sqsService:     sqs.New(sess),
-			service:        service.NewOrderService(),
-			queueProcessor: make(map[string]func(queue string, ch chan *sqs.Message)),
+			sqsService: sqs.New(sess),
+			service:    service.NewOrderService(),
+			queueAddress: map[string]string{
+				orderQueue:            config.Get().SQS.OrderQueue,
+				paymentPayedQueue:     config.Get().SQS.PaymentPayedQueue,
+				paymentCancelledQueue: config.Get().SQS.PaymentCancelledQueue,
+			},
 		}
-
-		sqs.queueProcessor[config.Get().SQS.PaymentPayedQueue] = sqs.processPaymentPayedMessage
-		sqs.queueProcessor[config.Get().SQS.OrderQueue] = sqs.processOrderMessage
-		sqs.queueProcessor[config.Get().SQS.PaymentCancelledQueue] = sqs.processPaymentCancelledMessage
 
 		instance = sqs
 	})
@@ -58,17 +62,62 @@ func NewSQS() QueueInterface {
 }
 
 func (q *queueSQS) Start() {
-	for queue, processor := range q.queueProcessor {
-		channel := make(chan *sqs.Message)
-		go q.receiveMessage(queue, channel)
-		go processor(queue, channel)
+	orderChannel := make(chan *sqs.Message)
+	paymentPayedChannel := make(chan *sqs.Message)
+	paymentCancelledChannel := make(chan *sqs.Message)
+
+	go q.receiveMessage(q.queueAddress[orderQueue], orderChannel)
+	go q.receiveMessage(q.queueAddress[paymentPayedQueue], paymentPayedChannel)
+	go q.receiveMessage(q.queueAddress[paymentCancelledQueue], paymentCancelledChannel)
+
+	q.messageProcessor(orderChannel, paymentPayedChannel, paymentCancelledChannel)
+}
+
+func (q *queueSQS) messageProcessor(orderChannel, paymentPayedChannel, paymentCancelledChannel chan *sqs.Message) {
+	for {
+		select {
+		case orderMessage := <-orderChannel:
+
+			log.Info().Any("msg_id", orderMessage.MessageId).Msg("msg received from order queue")
+
+			orderId := unmarshalMessageToId(orderMessage)
+
+			_, err := q.service.CheckoutOrder(context.Background(), orderId)
+			if err != nil {
+				log.Err(err).Any("order_id", orderId).Msg("an error occurred when checkout order")
+			}
+
+			q.deleteMessage(orderMessage, q.queueAddress[orderQueue])
+
+		case paymentPayedMessage := <-paymentPayedChannel:
+			log.Info().Any("msg_id", paymentPayedMessage.MessageId).Msg("msg received from payment payed queue")
+
+			orderId := unmarshalMessageToId(paymentPayedMessage)
+
+			err := q.service.UpdateStatus(context.Background(), orderId, canonical.ORDER_PAYED)
+			if err != nil {
+				log.Err(err).Any("order_id", orderId).Msg("an error occurred when update status")
+			}
+
+			q.deleteMessage(paymentPayedMessage, q.queueAddress[paymentPayedQueue])
+
+		case paymentCancelledMessage := <-paymentCancelledChannel:
+			log.Info().Any("msg_id", paymentCancelledMessage.MessageId).Msg("msg received from payment payed queue")
+
+			orderId := unmarshalMessageToId(paymentCancelledMessage)
+
+			err := q.service.UpdateStatus(context.Background(), orderId, canonical.ORDER_CANCELLED)
+			if err != nil {
+				log.Err(err).Any("order_id", orderId).Msg("an error occurred when update status")
+			}
+
+			q.deleteMessage(paymentCancelledMessage, q.queueAddress[paymentCancelledQueue])
+		}
 	}
 }
 
 func (q *queueSQS) receiveMessage(queueToListen string, ch chan<- *sqs.Message) {
 	for {
-		logrus.Info(fmt.Printf("STARTING LISTENING TO %s", queueToListen))
-
 		paramsOrder := &sqs.ReceiveMessageInput{
 			QueueUrl:            &queueToListen,
 			MaxNumberOfMessages: aws.Int64(1),
@@ -76,6 +125,7 @@ func (q *queueSQS) receiveMessage(queueToListen string, ch chan<- *sqs.Message) 
 
 		resp, err := q.sqsService.ReceiveMessage(paramsOrder)
 		if err != nil {
+			log.Err(err).Msg("an error occurred when receive message from the queue")
 			continue
 		}
 
@@ -84,69 +134,9 @@ func (q *queueSQS) receiveMessage(queueToListen string, ch chan<- *sqs.Message) 
 				ch <- msg
 			}
 		} else {
-			logrus.Info("there aren't new messages")
+			log.Info().Msg("no new messages")
 			time.Sleep(time.Second * 10)
 		}
-	}
-}
-
-func (q *queueSQS) processPaymentPayedMessage(queue string, ch chan *sqs.Message) {
-	for {
-		msg := <-ch
-
-		var orderId string
-
-		err := json.Unmarshal([]byte(*msg.Body), &orderId)
-		if err != nil {
-			logrus.WithError(err).WithField("order_id", orderId).Error("an error occurred when parse sqs message")
-		}
-
-		err = q.service.UpdateStatus(context.Background(), orderId, canonical.ORDER_PAYED)
-		if err != nil {
-			logrus.WithError(err).WithField("order_id", orderId).Error("an error occurred when update order status")
-		}
-
-		q.deleteMessage(msg, queue)
-	}
-}
-
-func (q *queueSQS) processPaymentCancelledMessage(queue string, ch chan *sqs.Message) {
-	for {
-		msg := <-ch
-
-		var orderId string
-
-		err := json.Unmarshal([]byte(*msg.Body), &orderId)
-		if err != nil {
-			logrus.WithError(err).WithField("order_id", orderId).Error("an error occurred when parse sqs message")
-		}
-
-		err = q.service.UpdateStatus(context.Background(), orderId, canonical.ORDER_CANCELLED)
-		if err != nil {
-			logrus.WithError(err).WithField("order_id", orderId).Error("an error occurred when update order status")
-		}
-
-		q.deleteMessage(msg, queue)
-	}
-}
-
-func (q *queueSQS) processOrderMessage(queue string, ch chan *sqs.Message) {
-	for {
-		msg := <-ch
-
-		var orderId string
-
-		err := json.Unmarshal([]byte(*msg.Body), &orderId)
-		if err != nil {
-			logrus.WithError(err).WithField("order_id", orderId).Error("an error occurred when parse sqs message")
-		}
-
-		_, err = q.service.CheckoutOrder(context.Background(), orderId)
-		if err != nil {
-			logrus.WithError(err).WithField("order_id", orderId).Error("an error occurred when checkout order")
-		}
-
-		q.deleteMessage(msg, queue)
 	}
 }
 
@@ -156,6 +146,17 @@ func (q *queueSQS) deleteMessage(msg *sqs.Message, queue string) {
 		ReceiptHandle: msg.ReceiptHandle,
 	})
 	if err != nil {
-		logrus.WithError(err).Error("an error occurred when deleting message")
+		log.Err(err).Any("msg_id", msg.MessageId).Msg("an error occurred when delete message")
 	}
+}
+
+func unmarshalMessageToId(msg *sqs.Message) string {
+	var id string
+
+	err := json.Unmarshal([]byte(*msg.Body), &id)
+	if err != nil {
+		log.Err(err).Any("msg_id", msg.MessageId).Msg("an error occurred when process message")
+	}
+
+	return id
 }
