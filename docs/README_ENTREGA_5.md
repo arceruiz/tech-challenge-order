@@ -22,7 +22,7 @@ PARA VISUALIZAÇÃO DAS IMAGENS, UMA CÓPIA DESTE README ENCONTRA-SE EM: [LINK R
 
 # Video de Apresentação
 
-Fizemos um video mostrando todos os pontos do projeto e está compartilhado em: https://drive.google.com/drive/folders/1J2OHfgty_4C_EDLeBaz1tThqovpAMWH5?usp=sharing
+Fizemos um video mostrando todos os pontos do projeto e está compartilhado em: https://drive.google.com/drive/folders/1LEQYRtPAx6eq7VyX0RtWgALFcyuercXA
 
 # Links para os Repos
 
