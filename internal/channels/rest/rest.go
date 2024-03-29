@@ -14,7 +14,9 @@ type Order interface {
 	Update(c echo.Context) error
 	UpdateStatus(c echo.Context) error
 	CheckoutOrder(c echo.Context) error
+	HealthCheck(c echo.Context) error
 }
+
 type rest struct {
 	order Order
 }
@@ -32,9 +34,10 @@ func (r rest) Start() error {
 
 	mainGroup := router.Group("/api")
 
+	mainGroup.GET("/healthz", r.order.HealthCheck)
 	orderGroup := mainGroup.Group("/order")
 	r.order.RegisterGroup(orderGroup)
-	//orderGroup.Use(middlewares.Authorization)
+	orderGroup.Use(middlewares.Authorization)
 
 	return router.Start(":" + config.Get().Server.Port)
 }

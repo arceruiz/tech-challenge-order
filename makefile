@@ -29,3 +29,11 @@ create-payment-payed-queue:
 
 create-payment-cancelled-queue:
 	awslocal sqs create-queue --queue-name paymentcancelledqueue
+
+test-build-bake:
+	docker build -t docker.io/mauricio1998/order-service . -f build/Dockerfile
+
+docker-push:
+	docker push docker.io/mauricio1998/order-service
+
+boiler-plate: test-build-bake docker-push

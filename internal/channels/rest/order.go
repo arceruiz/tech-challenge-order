@@ -22,11 +22,15 @@ func NewOrderChannel() Order {
 }
 
 func (p *order) RegisterGroup(g *echo.Group) {
-	g.GET("/", p.Get)
+	g.GET("", p.Get)
 	g.POST("/", p.Create)
 	g.PUT("/:id", p.Update)
 	g.PATCH("/", p.UpdateStatus)
 	g.POST("/checkout", p.CheckoutOrder)
+}
+
+func (r *order) HealthCheck(c echo.Context) error {
+	return c.NoContent(http.StatusOK)
 }
 
 func (p *order) Get(ctx echo.Context) error {
