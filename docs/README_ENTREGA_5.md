@@ -1,6 +1,6 @@
 # FIAP - Tech Challenge V
 
-PARA VISUALIZAÇÃO DAS IMAGENS, UMA CÓPIA DESTE README ENCONTRA-SE EM: [LINK README_ENTREGA_5]()
+PARA VISUALIZAÇÃO DAS IMAGENS, UMA CÓPIA DESTE README ENCONTRA-SE EM: [LINK README_ENTREGA_5](https://github.com/arceruiz/tech-challenge-order/blob/main/docs/README_ENTREGA_5.md)
 
 ## Integrantes
 - Lucas Arce Ruiz - RM349580
