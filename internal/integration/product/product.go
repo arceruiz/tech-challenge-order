@@ -6,7 +6,8 @@ import (
 	"tech-challenge-order/internal/canonical"
 	"tech-challenge-order/internal/config"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,7 +23,7 @@ type productService struct {
 func NewProduct() ProductService {
 	client, err := grpc.Dial(config.Get().Server.ProductPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal().Err(err).Msg("an error occurred when try to dial product service")
 	}
 
 	grpcClient := NewProductServiceClient(client)

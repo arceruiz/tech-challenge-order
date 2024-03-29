@@ -29,6 +29,10 @@ func (p *order) RegisterGroup(g *echo.Group) {
 	g.POST("/checkout", p.CheckoutOrder)
 }
 
+func (r *order) HealthCheck(c echo.Context) error {
+	return c.NoContent(http.StatusOK)
+}
+
 func (p *order) Get(ctx echo.Context) error {
 	id := ctx.QueryParam("id")
 	status := ctx.QueryParam("status")

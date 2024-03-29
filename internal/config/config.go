@@ -20,7 +20,7 @@ type Config struct {
 		ProductPort string `cfg:"product_integration"`
 	} `cfg:"server"`
 	DB struct {
-		ConnectionString string `cfg:"connectionString"`
+		ConnectionString string `cfg:"connection_string"`
 	} `cfg:"db"`
 	SQS struct {
 		PaymentPendingQueue   string `cfg:"payment_pending_queue"`
@@ -28,7 +28,6 @@ type Config struct {
 		PaymentCancelledQueue string `cfg:"payment_cancelled_queue"`
 		OrderQueue            string `cfg:"order_queue"`
 		Region                string `cfg:"region"`
-		Endpoint              string `cfg:"endpoint"`
 	} `cfg:"sqs"`
 }
 
@@ -44,7 +43,7 @@ func ParseFromFlags() {
 func parse(dirs ...string) {
 	if err := cfg.Load(&conf,
 		cfg.Dirs(dirs...),
-		cfg.UseEnv("app"),
+		cfg.UseEnv("APP"),
 	); err != nil {
 		log.Panic(err)
 	}

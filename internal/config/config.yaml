@@ -4,11 +4,11 @@ server:
 token:
   key: "dnVJWGFPSzRPcEpXQTl5U1gxVVRwSVdzaFhQcFA2bmVHS0dBNzI0RmF1WQ=="
 db:
-  connectionString: mongodb://root:password@0.0.0.0:27017/
+  connectionString: mongodb://root:password@ec2-3-87-14-208.compute-1.amazonaws.com:27017/
 sqs:
   endpoint: "http://localhost:4566"
   region: sa-east-1
-  payment_pending_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentpendingqueue
   order_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/orderqueue
+  payment_pending_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentpendingqueue
   payment_payed_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentpayedqueue
   payment_cancelled_queue: http://sqs.sa-east-1.localhost.localstack.cloud:4566/000000000000/paymentcancelledqueue

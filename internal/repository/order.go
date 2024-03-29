@@ -34,10 +34,13 @@ func (r *orderRepository) GetAll(ctx context.Context) ([]canonical.Order, error)
 	if err != nil {
 		return nil, err
 	}
+
 	var results []canonical.Order
+
 	if err = cursor.All(context.TODO(), &results); err != nil {
 		return nil, err
 	}
+
 	return results, nil
 }
 
